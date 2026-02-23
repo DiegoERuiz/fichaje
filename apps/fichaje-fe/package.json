@@ -28,7 +28,7 @@
     "json-unpacker": "^1.1.4",
     "leaflet": "^1.9.4",
     "ngx-spec": "^2.1.4",
-    "primeng": "^12.2.2",
+    "primeng": "^13.0.0",
     "rxjs": "~6.6.0",
     "tslib": "^2.1.0",
     "zone.js": "~0.11.4"
