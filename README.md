@@ -74,7 +74,11 @@ Este fork ha sido ideado y mantenido por:
 ## ⚙️ Requisitos
 - Docker y Docker Compose (versión 3.9+)
 - Máquina con al menos **2 vCPU**, **2 GB RAM** y **10 GB de disco** libres
-- Puerto 80, 81, 3306 y 8080 disponibles (configurables)
+- Puertos configurables vía variables de entorno:
+  - **BD**: 3306 (configurable con `DB_PORT`)
+  - **Backend**: 8080 (configurable con `BACKEND_PORT`)
+  - **Frontend**: 80 (configurable con `FRONTEND_PORT`)
+  - **phpMyAdmin**: 81 (configurable con `PHPMYADMIN_PORT`)
 
 ## 🚀 Instalación rápida con Docker Compose
 
@@ -91,10 +95,11 @@ curl -o deploy/prod/.env https://raw.githubusercontent.com/jamataran/fichaje/mai
 docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env up -d
 ```
 
-3. **Acceder a la aplicación**:
-   - 🌐 **Frontend**: http://localhost
-   - 🔌 **API Backend**: http://localhost:8080
-   - 🗄️ **phpMyAdmin**: http://localhost:81
+3. **Acceder a la aplicación** (puertos configurables vía `.env`):
+   - 🌐 **Frontend**: `http://localhost:${FRONTEND_PORT:-80}`
+   - 🔌 **API Backend**: `http://localhost:${BACKEND_PORT:-8080}`
+   - 🗄️ **phpMyAdmin**: `http://localhost:${PHPMYADMIN_PORT:-81}`
+   - 🗄️ **Base de datos MySQL**: `localhost:${DB_PORT:-3306}`
 
 #### Archivo Docker Compose completo (`deploy/prod/compose.yaml`)
 
@@ -141,7 +146,7 @@ services:
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -153,7 +158,7 @@ services:
     container_name: fichaje_fe
     image: ${FRONTEND_IMAGE:-ghcr.io/jamataran/fichaje-frontend:latest}
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
     environment:
       TZ: ${TZ:-Europe/Madrid}
     restart: unless-stopped
@@ -164,7 +169,7 @@ services:
     container_name: fichaje_dbadmin
     image: phpmyadmin:latest
     ports:
-      - "81:80"
+      - "${PHPMYADMIN_PORT:-81}:80"
     environment:
       PMA_ARBITRARY: 1
       PMA_HOST: db
@@ -184,6 +189,12 @@ volumes:
   db_data:
     name: fichajes_db_prod_data
 ```
+
+> ℹ️ **Nota**: Los puertos son configurables mediante variables de entorno en el archivo `.env`:
+> - `DB_PORT=3306` - Puerto de la base de datos
+> - `BACKEND_PORT=8080` - Puerto del API REST
+> - `FRONTEND_PORT=80` - Puerto del frontend web
+> - `PHPMYADMIN_PORT=81` - Puerto de phpMyAdmin
 
 **Detener la aplicación**:
 ```bash
@@ -275,12 +286,13 @@ cp deploy/dev/.env.example deploy/dev/.env
 pnpm dev:stack
 ```
 
-Esto arrancará:
-- MySQL (puerto 3307)
-- phpMyAdmin (puerto 8081)
-- MailHog para captura de emails (puerto 8025)
-- Backend Spring Boot (puerto 8080)
-- Frontend Angular (puerto 4200)
+Esto arrancará (con puertos configurables vía `deploy/dev/.env`):
+- MySQL (puerto `3307` - configurable con `DB_PORT`)
+- phpMyAdmin (puerto `8081` - configurable con `PHPMYADMIN_PORT`)
+- MailHog SMTP (puerto `1025` - configurable con `MAILHOG_SMTP_PORT`)
+- MailHog UI (puerto `8025` - configurable con `MAILHOG_UI_PORT`)
+- Backend Spring Boot (puerto `8080`)
+- Frontend Angular (puerto `4200`)
 
 ## 📚 Enlaces útiles
 - 🔗 **[Guía de desarrollo](SETUP.md)** - Estructura del monorepo y comandos Turborepo
