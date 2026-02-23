@@ -75,7 +75,7 @@ services:
       - fichajes-network
 
   proxy:
-    container_name: fichaje_rproxy
+    container_name: fichaje_proxy
     image: caddy:2-alpine
     ports:
       - "${APP_PORT:-80}:80"
@@ -84,35 +84,31 @@ services:
       ENABLE_SSL: ${ENABLE_SSL:-false}
       DOMAIN: ${DOMAIN:-localhost}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
-    command: >
-      sh -c '
-        if [ "$$ENABLE_SSL" = "true" ]; then
-          echo "$$DOMAIN {
-            tls $$LETSENCRYPT_EMAIL
-            handle_path /api/* {
-              reverse_proxy backend:8080 {
-                lb_try_duration 30s
-                lb_try_interval 1s
-              }
-            }
-            handle {
-              reverse_proxy frontend:80
-            }
-          }" > /etc/caddy/Caddyfile;
-        else
-          echo ":80 {
-            handle_path /api/* {
-              reverse_proxy backend:8080 {
-                lb_try_duration 30s
-                lb_try_interval 1s
-              }
-            }
-            handle {
-              reverse_proxy frontend:80
-            }
-          }" > /etc/caddy/Caddyfile;
-        fi &&
-        caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    command: |
+      sh -c 'if [ "$$ENABLE_SSL" = "true" ]; then
+        cat > /etc/caddy/Caddyfile <<EOF
+      $$DOMAIN {
+        tls $$LETSENCRYPT_EMAIL
+        handle_path /api/* {
+          reverse_proxy backend:8080
+        }
+        handle {
+          reverse_proxy frontend:80
+        }
+      }
+      EOF
+      else
+        cat > /etc/caddy/Caddyfile <<EOF
+      :80 {
+        handle_path /api/* {
+          reverse_proxy backend:8080
+        }
+        handle {
+          reverse_proxy frontend:80
+        }
+      }
+      EOF
+      fi && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - caddy_data:/data
       - caddy_config:/config
