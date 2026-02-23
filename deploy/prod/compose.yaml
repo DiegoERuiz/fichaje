@@ -50,6 +50,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/test || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       db:
         condition: service_healthy
@@ -84,7 +90,10 @@ services:
           echo "$$DOMAIN {
             tls $$LETSENCRYPT_EMAIL
             handle_path /api/* {
-              reverse_proxy backend:8080
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
             }
             handle {
               reverse_proxy frontend:80
@@ -93,7 +102,10 @@ services:
         else
           echo ":80 {
             handle_path /api/* {
-              reverse_proxy backend:8080
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
             }
             handle {
               reverse_proxy frontend:80
@@ -105,8 +117,10 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - fichajes-network
