@@ -113,7 +113,7 @@ services:
     container_name: fichaje_db
     image: mysql:8.0
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -136,7 +136,7 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/jamataran/fichaje-backend:latest}
     environment:
       TZ: ${TZ:-Europe/Madrid}
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Europe/Madrid
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:${DB_PORT:-3306}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Europe/Madrid
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       CLIENT_URL: ${CLIENT_URL}
@@ -144,6 +144,8 @@ services:
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
@@ -195,6 +197,14 @@ volumes:
 > - `BACKEND_PORT=8080` - Puerto del API REST
 > - `FRONTEND_PORT=80` - Puerto del frontend web
 > - `PHPMYADMIN_PORT=81` - Puerto de phpMyAdmin
+>
+> **Configuración SMTP** (configurable en `.env`):
+> - `SPRING_MAIL_HOST` - Servidor SMTP
+> - `SPRING_MAIL_PORT` - Puerto SMTP
+> - `SPRING_MAIL_USERNAME` - Usuario de correo
+> - `SPRING_MAIL_PASSWORD` - Contraseña de correo
+> - `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true/false` - Autenticación SMTP
+> - `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true/false` - TLS en SMTP
 
 **Detener la aplicación**:
 ```bash
