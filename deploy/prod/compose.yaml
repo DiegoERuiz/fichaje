@@ -3,8 +3,6 @@
 #  - docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env up -d
 #  - docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env down
 
-version: '3.9'
-
 services:
   db:
     container_name: fichaje_db
@@ -84,31 +82,38 @@ services:
       ENABLE_SSL: ${ENABLE_SSL:-false}
       DOMAIN: ${DOMAIN:-localhost}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
-    command: |
-      sh -c 'if [ "$$ENABLE_SSL" = "true" ]; then
-        cat > /etc/caddy/Caddyfile <<EOF
-      $$DOMAIN {
-        tls $$LETSENCRYPT_EMAIL
-        handle_path /api/* {
-          reverse_proxy backend:8080
-        }
-        handle {
-          reverse_proxy frontend:80
-        }
-      }
-      EOF
-      else
-        cat > /etc/caddy/Caddyfile <<EOF
-      :80 {
-        handle_path /api/* {
-          reverse_proxy backend:8080
-        }
-        handle {
-          reverse_proxy frontend:80
-        }
-      }
-      EOF
-      fi && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    command: >
+      sh -euc '
+        if [ "$$ENABLE_SSL" = "true" ]; then
+          echo "$$DOMAIN {
+            tls $$LETSENCRYPT_EMAIL
+            handle /api/* {
+              uri strip_prefix /api
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
+            }
+            handle {
+              reverse_proxy frontend:80
+            }
+          }" > /etc/caddy/Caddyfile;
+        else
+          echo ":80 {
+            handle /api/* {
+              uri strip_prefix /api
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
+            }
+            handle {
+              reverse_proxy frontend:80
+            }
+          }" > /etc/caddy/Caddyfile;
+        fi &&
+        caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile &&
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - caddy_data:/data
       - caddy_config:/config

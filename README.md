@@ -108,6 +108,12 @@ docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env up -d
 ENABLE_SSL=true
 DOMAIN=tudominio.com
 LETSENCRYPT_EMAIL=admin@tudominio.com
+CLIENT_URL=https://tudominio.com
+```
+
+Si no usas SSL, configura:
+```bash
+CLIENT_URL=http://tudominio.com
 ```
 
 #### Archivo Docker Compose completo (`deploy/prod/compose.yaml`)
@@ -115,8 +121,6 @@ LETSENCRYPT_EMAIL=admin@tudominio.com
 Si prefieres el archivo completo para copiar y pegar:
 
 ```yaml
-version: '3.9'
-
 services:
   db:
     container_name: fichaje_db
@@ -196,31 +200,38 @@ services:
       ENABLE_SSL: ${ENABLE_SSL:-false}
       DOMAIN: ${DOMAIN:-localhost}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
-    command: |
-      sh -c 'if [ "$$ENABLE_SSL" = "true" ]; then
-        cat > /etc/caddy/Caddyfile <<EOF
-      $$DOMAIN {
-        tls $$LETSENCRYPT_EMAIL
-        handle_path /api/* {
-          reverse_proxy backend:8080
-        }
-        handle {
-          reverse_proxy frontend:80
-        }
-      }
-      EOF
-      else
-        cat > /etc/caddy/Caddyfile <<EOF
-      :80 {
-        handle_path /api/* {
-          reverse_proxy backend:8080
-        }
-        handle {
-          reverse_proxy frontend:80
-        }
-      }
-      EOF
-      fi && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    command: >
+      sh -euc '
+        if [ "$$ENABLE_SSL" = "true" ]; then
+          echo "$$DOMAIN {
+            tls $$LETSENCRYPT_EMAIL
+            handle /api/* {
+              uri strip_prefix /api
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
+            }
+            handle {
+              reverse_proxy frontend:80
+            }
+          }" > /etc/caddy/Caddyfile;
+        else
+          echo ":80 {
+            handle /api/* {
+              uri strip_prefix /api
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
+            }
+            handle {
+              reverse_proxy frontend:80
+            }
+          }" > /etc/caddy/Caddyfile;
+        fi &&
+        caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile &&
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -267,6 +278,7 @@ volumes:
 > - `APP_SSL_PORT=443` - Puerto HTTPS (si SSL está habilitado)
 > - `DB_PORT=3306` - Puerto de la base de datos
 > - `PHPMYADMIN_PORT=81` - Puerto de phpMyAdmin
+> - `CLIENT_URL=http://tudominio.com` si `ENABLE_SSL=false`, y `https://tudominio.com` si `ENABLE_SSL=true`
 >
 > **SSL con Let's Encrypt** (opcional):
 > - `ENABLE_SSL=true` - Habilitar HTTPS con certificado automático
@@ -280,6 +292,30 @@ volumes:
 > - `SPRING_MAIL_PASSWORD` - Contraseña de correo
 > - `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true/false` - Autenticación SMTP
 > - `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true/false` - TLS en SMTP
+
+> ✅ En Portainer es normal ver `PublishedPorts: -` en `backend`: ese contenedor no se publica hacia fuera y solo recibe tráfico interno desde `proxy`.
+
+### 🧩 Troubleshooting rápido (Portainer + 502 en login)
+
+1. Verifica que `CLIENT_URL` coincide con tu esquema real (`http://` sin SSL, `https://` con SSL).
+2. Comprueba resolución interna desde el proxy:
+```bash
+docker exec -it fichaje_proxy ping -c1 backend
+```
+3. Comprueba que el backend responde desde el proxy:
+```bash
+docker exec -it fichaje_proxy wget -qO- http://backend:8080/test
+```
+4. Revisa logs del proxy y backend:
+```bash
+docker logs --tail=200 fichaje_proxy
+docker logs --tail=200 fichaje_be
+```
+5. Si cambiaste credenciales de MySQL con un volumen ya existente, recrea la BD para evitar usuarios desincronizados:
+```bash
+docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env down -v
+docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env up -d
+```
 
 **Detener la aplicación**:
 ```bash
