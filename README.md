@@ -121,6 +121,10 @@ services:
   db:
     container_name: fichaje_db
     image: mysql:8.0
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     ports:
       - "${DB_PORT:-3306}:3306"
     environment:
@@ -132,7 +136,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -158,6 +162,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/test || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       db:
         condition: service_healthy
@@ -192,7 +202,10 @@ services:
           echo "$$DOMAIN {
             tls $$LETSENCRYPT_EMAIL
             handle_path /api/* {
-              reverse_proxy backend:8080
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
             }
             handle {
               reverse_proxy frontend:80
@@ -201,7 +214,10 @@ services:
         else
           echo ":80 {
             handle_path /api/* {
-              reverse_proxy backend:8080
+              reverse_proxy backend:8080 {
+                lb_try_duration 30s
+                lb_try_interval 1s
+              }
             }
             handle {
               reverse_proxy frontend:80
@@ -213,8 +229,10 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - fichajes-network
