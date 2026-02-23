@@ -65,7 +65,7 @@ services:
       - fichajes-network
 
   proxy:
-    container_name: fichaje_proxy
+    container_name: fichaje_rproxy
     image: caddy:2-alpine
     ports:
       - "${APP_PORT:-80}:80"
