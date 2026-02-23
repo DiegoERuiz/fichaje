@@ -75,9 +75,9 @@ Este fork ha sido ideado y mantenido por:
 - Docker y Docker Compose (versión 3.9+)
 - Máquina con al menos **2 vCPU**, **2 GB RAM** y **10 GB de disco** libres
 - Puertos configurables vía variables de entorno:
+  - **Aplicación (HTTP)**: 80 (configurable con `APP_PORT`)
+  - **Aplicación (HTTPS)**: 443 (configurable con `APP_SSL_PORT`)
   - **BD**: 3306 (configurable con `DB_PORT`)
-  - **Backend**: 8080 (configurable con `BACKEND_PORT`)
-  - **Frontend**: 80 (configurable con `FRONTEND_PORT`)
   - **phpMyAdmin**: 81 (configurable con `PHPMYADMIN_PORT`)
 
 ## 🚀 Instalación rápida con Docker Compose
@@ -95,11 +95,20 @@ curl -o deploy/prod/.env https://raw.githubusercontent.com/jamataran/fichaje/mai
 docker compose -f deploy/prod/compose.yaml --env-file deploy/prod/.env up -d
 ```
 
-3. **Acceder a la aplicación** (puertos configurables vía `.env`):
-   - 🌐 **Frontend**: `http://localhost:${FRONTEND_PORT:-80}`
-   - 🔌 **API Backend**: `http://localhost:${BACKEND_PORT:-8080}`
+3. **Acceder a la aplicación** (un único punto de entrada vía proxy inverso):
+   - 🌐 **Aplicación**: `http://localhost` (o `https://tudominio.com` con SSL)
    - 🗄️ **phpMyAdmin**: `http://localhost:${PHPMYADMIN_PORT:-81}`
    - 🗄️ **Base de datos MySQL**: `localhost:${DB_PORT:-3306}`
+
+> 💡 El proxy Caddy enruta automáticamente: las peticiones a `/api/*` van al backend y el resto al frontend. No necesitas configurar nada más.
+
+4. **(Opcional) Habilitar SSL con Let's Encrypt**:
+```bash
+# En deploy/prod/.env configurar:
+ENABLE_SSL=true
+DOMAIN=tudominio.com
+LETSENCRYPT_EMAIL=admin@tudominio.com
+```
 
 #### Archivo Docker Compose completo (`deploy/prod/compose.yaml`)
 
@@ -136,7 +145,7 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/jamataran/fichaje-backend:latest}
     environment:
       TZ: ${TZ:-Europe/Madrid}
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:${DB_PORT:-3306}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Europe/Madrid
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Europe/Madrid
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       CLIENT_URL: ${CLIENT_URL}
@@ -147,8 +156,8 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
       JWT_SECRET: ${JWT_SECRET}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+    expose:
+      - "8080"
     depends_on:
       db:
         condition: service_healthy
@@ -159,10 +168,34 @@ services:
   frontend:
     container_name: fichaje_fe
     image: ${FRONTEND_IMAGE:-ghcr.io/jamataran/fichaje-frontend:latest}
-    ports:
-      - "${FRONTEND_PORT:-80}:80"
+    expose:
+      - "80"
     environment:
       TZ: ${TZ:-Europe/Madrid}
+    restart: unless-stopped
+    networks:
+      - fichajes-network
+
+  proxy:
+    container_name: fichaje_proxy
+    image: caddy:2-alpine
+    ports:
+      - "${APP_PORT:-80}:80"
+      - "${APP_SSL_PORT:-443}:443"
+    environment:
+      ENABLE_SSL: ${ENABLE_SSL:-false}
+      DOMAIN: ${DOMAIN:-localhost}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+    volumes:
+      - ./Caddyfile.http:/etc/caddy/Caddyfile.http:ro
+      - ./Caddyfile.https:/etc/caddy/Caddyfile.https:ro
+      - ./caddy-entrypoint.sh:/entrypoint.sh:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    entrypoint: /entrypoint.sh
+    depends_on:
+      - frontend
+      - backend
     restart: unless-stopped
     networks:
       - fichajes-network
@@ -190,13 +223,22 @@ networks:
 volumes:
   db_data:
     name: fichajes_db_prod_data
+  caddy_data:
+    name: fichajes_caddy_data
+  caddy_config:
+    name: fichajes_caddy_config
 ```
 
-> ℹ️ **Nota**: Los puertos son configurables mediante variables de entorno en el archivo `.env`:
+> ℹ️ **Nota**: La aplicación usa un **proxy inverso Caddy** que enruta automáticamente `/api/*` al backend y el resto al frontend. Variables configurables en `.env`:
+> - `APP_PORT=80` - Puerto HTTP de la aplicación
+> - `APP_SSL_PORT=443` - Puerto HTTPS (si SSL está habilitado)
 > - `DB_PORT=3306` - Puerto de la base de datos
-> - `BACKEND_PORT=8080` - Puerto del API REST
-> - `FRONTEND_PORT=80` - Puerto del frontend web
 > - `PHPMYADMIN_PORT=81` - Puerto de phpMyAdmin
+>
+> **SSL con Let's Encrypt** (opcional):
+> - `ENABLE_SSL=true` - Habilitar HTTPS con certificado automático
+> - `DOMAIN=tudominio.com` - Dominio para el certificado
+> - `LETSENCRYPT_EMAIL=admin@tudominio.com` - Email para Let's Encrypt
 >
 > **Configuración SMTP** (configurable en `.env`):
 > - `SPRING_MAIL_HOST` - Servidor SMTP

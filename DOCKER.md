@@ -96,9 +96,11 @@ pnpm docker:prod:down
 ```
 
 **Servicios disponibles:**
-- Frontend: http://localhost
-- Backend: http://localhost:8080
-- PHPMyAdmin: http://localhost:81
+- Aplicación: http://localhost (proxy Caddy → frontend + backend)
+- phpMyAdmin: http://localhost:81
+- MySQL Prod: localhost:3306
+
+> 💡 El proxy Caddy enruta `/api/*` al backend y el resto al frontend. Opcionalmente, habilita SSL con `ENABLE_SSL=true`.
 
 ---
 
@@ -116,9 +118,10 @@ El backend utiliza diferentes profiles:
 
 | Servicio | Desarrollo | Test | Producción |
 |----------|-----------|------|------------|
+| Proxy (Caddy) | - | - | 80 / 443 |
 | MySQL | 3307 | 3308 | 3306 |
-| Backend | 8080 | 8080 | 8080 |
-| Frontend | 4200 | - | 80 |
+| Backend | 8080 | 8080 | interno (via proxy) |
+| Frontend | 4200 | - | interno (via proxy) |
 | PHPMyAdmin | 8081 | - | 81 |
 | MailHog SMTP | 1025 | - | - |
 | MailHog UI | 8025 | - | - |
