@@ -1,0 +1,231 @@
+version: "3.8"
+
+services:
+  # ═══════════════════════════════════════════════════════════
+  # 1. BASE DE DATOS MYSQL
+  # ═══════════════════════════════════════════════════════════
+  mysql:
+    image: mysql:8.0
+    container_name: fichaje-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-fichaje-2024}
+      MYSQL_DATABASE: ${DB_NAME:-db_fichajespi_prod}
+      MYSQL_USER: ${DB_USER:-fichajes_prod}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_INITDB_SKIP_TZINFO: "yes"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - fichaje-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ═══════════════════════════════════════════════════════════
+  # 2. BACKEND JAVA SPRING BOOT
+  # ═══════════════════════════════════════════════════════════
+  backend:
+    build:
+      context: .
+      dockerfile: apps/fichaje-be/Dockerfile-prod
+    container_name: fichaje-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # === Base de Datos ===
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-db_fichajespi_prod}
+      DB_USER: ${DB_USER:-fichajes_prod}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # === JWT Tokens ===
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-36000000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+
+      # === HTTPS/SSL ===
+      SSL_KEYSTORE_PATH: /app/fichajes-keystore.p12
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD}
+
+      # === URLs ===
+      CLIENT_URL: ${CLIENT_URL:-https://fichajes.biedma.com}
+      SERVER_URL: ${SERVER_URL:-https://fichajes.biedma.com:8443}
+
+      # === Mail SMTP ===
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM:-noreply@biedma.com}
+
+      # === Rate Limiting ===
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+
+      # === Spring Profile ===
+      SPRING_PROFILES_ACTIVE: prod
+
+      # === JVM Options ===
+      JAVA_OPTS: "-Xmx2g -Xms512m -XX:+UseG1GC"
+
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./fichajes-keystore.p12:/app/fichajes-keystore.p12:ro
+    networks:
+      - fichaje-network
+    healthcheck:
+      test:
+        ["CMD", "curl", "-f", "-k", "https://localhost:8443/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "prometheus-job=fichaje-backend"
+
+  # ═══════════════════════════════════════════════════════════
+  # 3. NGINX - REVERSE PROXY & WEB SERVER
+  # ═══════════════════════════════════════════════════════════
+  nginx:
+    image: nginx:alpine
+    container_name: fichaje-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/prod/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./apps/fichaje-fe/dist/fichaje-fe:/usr/share/nginx/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - fichaje-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    environment:
+      - NGINX_HOST=${CLIENT_URL}
+
+  # ═══════════════════════════════════════════════════════════
+  # 4. REDIS - CACHÉ EN MEMORIA (Opcional)
+  # ═══════════════════════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    container_name: fichaje-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fichaje-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # ═══════════════════════════════════════════════════════════
+  # 5. PROMETHEUS - MONITOREO (Opcional)
+  # ═══════════════════════════════════════════════════════════
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fichaje-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prod/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - fichaje-network
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+
+  # ═══════════════════════════════════════════════════════════
+  # 6. GRAFANA - DASHBOARDS (Opcional)
+  # ═══════════════════════════════════════════════════════════
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fichaje-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/prod/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - fichaje-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ═══════════════════════════════════════════════════════════
+# VOLÚMENES PERSISTENTES
+# ═══════════════════════════════════════════════════════════
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+# ═══════════════════════════════════════════════════════════
+# RED PERSONALIZADA
+# ═══════════════════════════════════════════════════════════
+networks:
+  fichaje-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

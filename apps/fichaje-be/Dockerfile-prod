@@ -1,0 +1,45 @@
+FROM openjdk:11-jre-slim
+
+# Metadatos
+LABEL maintainer="Biedma" \
+      description="Fichaje Application Backend - Production" \
+      version="1.0.0"
+
+# Variables de entorno
+ENV APP_HOME=/app \
+    JAVA_OPTS="-Xmx2g -Xms512m -XX:+UseG1GC"
+
+# Crear directorio de aplicación
+WORKDIR $APP_HOME
+
+# Instalar curl para health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Copiar JAR compilado
+# El build context espera el JAR en: apps/fichaje-be/target/
+COPY apps/fichaje-be/target/fichaje-be-*.jar ./app.jar
+
+# Copiar keystore si existe
+COPY fichajes-keystore.p12 ./ 2>/dev/null || true
+
+# Crear usuario no-root
+RUN useradd -m -u 1000 fichaje && chown -R fichaje:fichaje $APP_HOME
+USER fichaje
+
+# Exponer puertos
+# 8443 = HTTPS (Spring Boot)
+# 8080 = HTTP (solo si es necesario)
+EXPOSE 8443 8080
+
+# Health check - verificar que el backend está activo
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD curl -f -k https://localhost:8443/actuator/health || exit 1
+
+# Comando de inicio
+CMD ["java", "-jar", \
+     "-Dspring.profiles.active=prod", \
+     "-Dspring.datasource.url=jdbc:mysql://mysql:3306/${DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true", \
+     "-Dspring.datasource.username=${DB_USER}", \
+     "-Dspring.datasource.password=${DB_PASSWORD}", \
+     "app.jar"]
+
