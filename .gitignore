@@ -31,6 +31,8 @@ logs/
 deploy/prod/.env
 deploy/prod/.htpasswd
 deploy/prod/*.log
+deploy/prod/backups/
+deploy/prod/caddy_logs/
 
 # Spring Boot
 **/application-local.properties

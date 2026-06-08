@@ -106,10 +106,92 @@ docker exec fichaje_dbadmin apache2ctl graceful
 ## ⚠️ Security Notes
 
 ✅ **HTTPS** — Let's Encrypt automático (Caddy)  
+✅ **Security Headers** — HSTS, CSP, X-Frame-Options, X-Content-Type-Options  
+✅ **Rate Limiting** — 200 req/min por IP (protección contra DoS/Brute Force)  
 ✅ **Basic Auth** — PhpMyAdmin protegido por Apache  
 ✅ **Credenciales** — Almacenadas solo en `.env` (no en Git)  
 ✅ **BD Interna** — MySQL accesible solo desde Docker  
 ✅ **Reverse Proxy** — Caddy aisla acceso directo a servicios  
+✅ **Logging** — Accesos guardados en JSON para auditoría  
+
+## 📊 Logging y Auditoría
+
+### Logs de Caddy (Reverse Proxy)
+```bash
+# Ver logs en tiempo real
+docker logs fichaje_proxy -f
+
+# Logs guardados en
+/var/log/caddy/access.log  # JSON format
+
+# Búsquedas útiles
+docker exec fichaje_proxy grep "200\|401\|403" /var/log/caddy/access.log | tail -20
+```
+
+### Información en logs
+```json
+{
+  "time": "1717941234",
+  "remote": "203.0.113.45",
+  "method": "POST",
+  "uri": "/api/fichajes",
+  "status": "200",
+  "duration_ms": "145",
+  "user_agent": "Mozilla/5.0..."
+}
+```
+
+## 🔄 Backup y Recuperación
+
+### Backups Automáticos
+Los backups se ejecutan **diariamente a las 2:00 AM** y se retienen durante **30 días**.
+
+### Ubicación de backups
+```
+/opt/fichaje/backups/
+├── fichaje_20260608_020000.sql.gz
+├── fichaje_20260607_020000.sql.gz
+└── ...
+```
+
+### Instalar backups automáticos
+```bash
+# En el servidor, ejecutar SOLO UNA VEZ
+cd /opt/fichaje/deploy/prod
+chmod +x install-backup-cron.sh
+./install-backup-cron.sh
+
+# Verificar
+crontab -l | grep backup
+```
+
+### Hacer backup manual
+```bash
+cd /opt/fichaje/deploy/prod
+./backup.sh
+```
+
+### Restaurar desde backup
+```bash
+# Listar backups disponibles
+ls -lh /opt/fichaje/backups/
+
+# Restaurar
+cd /opt/fichaje/deploy/prod
+./restore-backup.sh /opt/fichaje/backups/fichaje_20260608_020000.sql.gz
+
+# Confirmación: Escribe "SI" cuando se pida
+```
+
+### Verificar integridad de backup
+```bash
+gzip -t /opt/fichaje/backups/fichaje_20260608_020000.sql.gz && echo "✅ OK"
+```
+
+### Ver tamaño total de backups
+```bash
+du -sh /opt/fichaje/backups/
+```  
 
 ## 📝 Cambios en `.gitignore`
 

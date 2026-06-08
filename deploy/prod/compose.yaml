@@ -81,6 +81,7 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - caddy_logs:/var/log/caddy
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
       frontend:
@@ -124,3 +125,5 @@ volumes:
     name: fichajes_caddy_data
   caddy_config:
     name: fichajes_caddy_config
+  caddy_logs:
+    name: fichajes_caddy_logs

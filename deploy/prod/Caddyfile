@@ -1,5 +1,25 @@
 fichajes.biedma.com {
 	tls it@biedma.com
+	
+	# 🔐 Security Headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+	}
+	
+	# 📊 Access Logging (JSON format)
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 100mb
+			roll_keep 10
+		}
+		format json
+	}
+	
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy backend:8080 {
@@ -7,27 +27,17 @@ fichajes.biedma.com {
 			lb_try_interval 1s
 		}
 	}
+	
 	handle /db/* {
 		uri strip_prefix /db
 		reverse_proxy phpmyadmin:80
 	}
+	
 	handle {
 		reverse_proxy frontend:80
 	}
 }
 :80 {
-	handle /api/* {
-		uri strip_prefix /api
-		reverse_proxy backend:8080 {
-			lb_try_duration 30s
-			lb_try_interval 1s
-		}
-	}
-	handle /db/* {
-		uri strip_prefix /db
-		reverse_proxy phpmyadmin:80
-	}
-	handle {
-		reverse_proxy frontend:80
-	}
+	# Redirect HTTP to HTTPS
+	redir https://{host}{uri} permanent
 }
