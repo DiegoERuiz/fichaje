@@ -1,9 +1,6 @@
 package org.fichaje.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import org.fichaje.provider.db.entity.Rol;
 import org.fichaje.provider.db.entity.Usuario;
 import org.fichaje.provider.db.entity.RrhhDto;
 import org.fichaje.config.security.enums.RolNombre;

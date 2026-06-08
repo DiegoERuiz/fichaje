@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/apikey")
-// TODO: Configurar CORS de forma segura en producción, limitando a dominios específicos
-// @CrossOrigin(origins = {"https://tudominio.com", "https://app.tudominio.com"})
 @CrossOrigin(origins = "${client.url}") // Usar configuración desde properties
 public class ApiKeyController {
 
@@ -40,24 +38,23 @@ public class ApiKeyController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('RRHH')")
-    public ResponseEntity<?> createApiKey(@Valid @RequestBody ApiKeyCreateDto dto, 
-                                          Authentication authentication) {
+    public ResponseEntity<?> createApiKey(@Valid @RequestBody ApiKeyCreateDto dto,
+            Authentication authentication) {
         try {
             String createdBy = authentication.getName();
-            
+
             ApiKeyService.ApiKeyCreationResult result = apiKeyService.createApiKey(
                     dto.getName(),
                     dto.getDescription(),
                     dto.getUsuarioId(),
                     dto.getExpiresInDays(),
-                    createdBy
-            );
+                    createdBy);
 
             ApiKeyDto response = convertToDto(result.getApiKey());
             response.setPlainApiKey(result.getPlainApiKey());
 
             logger.info("API Key creada por {}: {}", createdBy, dto.getName());
-            
+
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException | IllegalStateException e) {
             // Errores de validación - es seguro mostrar el mensaje

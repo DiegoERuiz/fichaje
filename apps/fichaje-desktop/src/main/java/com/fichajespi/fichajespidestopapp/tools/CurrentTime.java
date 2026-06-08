@@ -30,7 +30,7 @@ public class CurrentTime extends Thread {
                 LocalTime time = LocalTime.now(); // Gets the current time
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
                 instance.changeTime(time.format(formatter));
-                this.sleep(1000);  // interval given in milliseconds  
+                Thread.sleep(1000);  // interval given in milliseconds  
             } catch (InterruptedException ex) {
                 Logger.getLogger(CurrentTime.class.getName()).log(Level.SEVERE, null, ex);
             }

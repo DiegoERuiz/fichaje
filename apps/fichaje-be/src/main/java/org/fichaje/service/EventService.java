@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import org.fichaje.provider.db.entity.Incidencia;
 import org.fichaje.provider.db.entity.Usuario;
-import org.fichaje.provider.mail.EmailService;
 
 @Component
 public class EventService {

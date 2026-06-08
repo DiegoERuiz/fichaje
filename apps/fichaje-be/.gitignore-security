@@ -1,0 +1,39 @@
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+
+# SSL/TLS
+*.p12
+*.pem
+*.key
+*.crt
+*.csr
+
+# Secrets and credentials
+**/src/main/resources/application-prod*.properties
+**/src/main/resources/application-local*.properties
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build
+target/
+build/
+dist/
+*.jar
+*.war
+*.ear
+
+# Scripts (local)
+generate-secrets.sh
+generate-secrets.bat
+
+# Logs
+logs/
+*.log

@@ -45,7 +45,7 @@ public class CardReader extends Thread {
         // Display the list of terminals
         TerminalFactory factory = TerminalFactory.getDefault();
         List<CardTerminal> terminals = factory.terminals().list();
-        //System.out.println("Terminals: " + terminals);
+        // System.out.println("Terminals: " + terminals);
 
         // Use the first terminal
         CardTerminal terminal = terminals.get(0);
@@ -53,29 +53,28 @@ public class CardReader extends Thread {
         // Connect wit hthe card
         if (terminal.isCardPresent()) {
 
-          
-          //Simulamos un click de ratón para despertar la pantalla si se ha apagado
+          // Simulamos un click de ratón para despertar la pantalla si se ha apagado
           Robot robot = new Robot();
-          robot.mousePress(InputEvent.BUTTON1_MASK);
-          robot.mouseRelease(InputEvent.BUTTON1_MASK);
+          robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+          robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
 
           Card card = terminal.connect("*");
-          //System.out.println("Card: " + card);
+          // System.out.println("Card: " + card);
           CardChannel channel = card.getBasicChannel();
 
           // Send test command
-          ResponseAPDU response = channel.transmit(new CommandAPDU(new byte[]{
-            (byte) 0xFF,
-            (byte) 0xCA,
-            (byte) 0x00,
-            (byte) 0x00,
-            (byte) 0x00}));
-          //System.out.println("Response: " + response.toString());
+          ResponseAPDU response = channel.transmit(new CommandAPDU(new byte[] {
+              (byte) 0xFF,
+              (byte) 0xCA,
+              (byte) 0x00,
+              (byte) 0x00,
+              (byte) 0x00 }));
+          // System.out.println("Response: " + response.toString());
 
           if (response.getSW1() == 0x63 && response.getSW2() == 0x00) {
-            //System.out.println("Failed");
+            // System.out.println("Failed");
           } else {
-            //System.out.println("UID: " + bin2hex(response.getData()));
+            // System.out.println("UID: " + bin2hex(response.getData()));
             BigInteger decimal = new BigInteger(bin2hex(response.getData()), 16);
             System.out.println(decimal);
             fichar(decimal.toString());
@@ -86,7 +85,7 @@ public class CardReader extends Thread {
         }
 
       } catch (Exception e) {
-        //System.out.println("Ouch: " + e.toString());
+        // System.out.println("Ouch: " + e.toString());
 
       }
     }
@@ -102,8 +101,9 @@ public class CardReader extends Thread {
       builder.append("Hora de ");
       builder.append(fichaje.getTipo());
       builder.append(": ");
-      //DateTimeFormatter formatterIn = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-      //LocalDateTime dateTime = LocalDateTime.parse(fichaje.getTime(), formatterIn);
+      // DateTimeFormatter formatterIn = DateTimeFormatter.ofPattern("dd-MM-yyyy
+      // HH:mm:ss");
+      // LocalDateTime dateTime = LocalDateTime.parse(fichaje.getTime(), formatterIn);
       LocalTime dateTime = LocalTime.parse(fichaje.getHora());
       DateTimeFormatter formatterOut = DateTimeFormatter.ofPattern("HH:mm:ss");
       builder.append(dateTime.format(formatterOut));

@@ -30,7 +30,6 @@ public class PermisoDtoConverter {
 		int comparacion = inicio.compareTo(fin);
 		if (comparacion > 0) {
 			return null;
-			// TODO mejor throw exception??
 		}
 
 		permiso.setHoraInicio(dto.getHoraInicio());

@@ -28,11 +28,11 @@ public class Application {
 
 	@PostConstruct
 	public void init() {
-//		TimeZone.setDefault(TimeZone.getTimeZone("Europe/Madrid")); // It will
-//																	// set UTC
-//																	// timezone
-//		System.out.println("Spring boot application running in UTC timezone :"
-//				+ new Date()); // It will print UTC timezone
+		// TimeZone.setDefault(TimeZone.getTimeZone("Europe/Madrid")); // It will
+		// // set UTC
+		// // timezone
+		// System.out.println("Spring boot application running in UTC timezone :"
+		// + new Date()); // It will print UTC timezone
 
 		/*
 		 * Crear los roles si es la primera vez que se ejecuta la app y la tabla no
@@ -42,35 +42,31 @@ public class Application {
 		if (roles.size() == 0) {
 			Rol rolUser = new Rol();
 			Rol rolRrhh = new Rol();
-//			Rol rolAdmin = new Rol();
+			// Rol rolAdmin = new Rol();
 			rolUser.setRolNombre(RolNombre.ROLE_USER);
 			rolRrhh.setRolNombre(RolNombre.ROLE_RRHH);
-//			rolAdmin.setRolNombre(RolNombre.ROLE_ADMIN);
+			// rolAdmin.setRolNombre(RolNombre.ROLE_ADMIN);
 			rolService.save(rolUser);
 			rolService.save(rolRrhh);
-//			rolService.save(rolAdmin);
+			// rolService.save(rolAdmin);
 			System.out.println("Roles creados");
 		} else {
 			System.out.println("Roles ya existen");
 		}
 
-		
-//		Creamos el usuario admin si no existe para poder tener un usuario con privilegios
+		// Creamos el usuario admin si no existe para poder tener un usuario con
+		// privilegios
 		String adminCredential = "fichajesPi000";
 
 		Usuario admin = usuarioService.findByNumero(adminCredential).orElse(null);
 		if (admin == null) {
 			System.out.println("No existe usuario admin");
-			
+
 			List<String> rolesAdmin = new ArrayList<>();
-//			rolesAdmin.add("admin");
+			// rolesAdmin.add("admin");
 			rolesAdmin.add("rrhh");
 
-			UsuarioDTO adminDto = new UsuarioDTO().builder()
-					.nombreEmpleado("AdminFichaje")
-					.numero(adminCredential)
-					.password(adminCredential)
-					.email("fichajespi@fichajespi.com")
+			UsuarioDTO adminDto = UsuarioDTO.builder()
 					.roles(rolesAdmin)
 					.dni("zzz")
 					.build();

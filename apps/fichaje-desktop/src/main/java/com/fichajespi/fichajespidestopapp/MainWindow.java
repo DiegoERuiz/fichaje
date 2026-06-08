@@ -8,7 +8,6 @@ package com.fichajespi.fichajespidestopapp;
 import com.fichajespi.fichajespidestopapp.smartcard.CardReader;
 import com.fichajespi.fichajespidestopapp.tools.CurrentDate;
 import com.fichajespi.fichajespidestopapp.tools.CurrentTime;
-import javax.swing.JFrame;
 
 /**
  *

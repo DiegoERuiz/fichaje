@@ -4,7 +4,6 @@ import java.util.*;
 
 import javax.transaction.Transactional;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.fichaje.dto.entity.UsuarioDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,7 +49,8 @@ public class UsuarioService extends CommonServiceImpl<Usuario, UsuarioRepository
     }
 
     /**
-     * Crea un nuevo usuario con todas sus validaciones, asignación de roles y envío de credenciales.
+     * Crea un nuevo usuario con todas sus validaciones, asignación de roles y envío
+     * de credenciales.
      *
      * @param usuarioDto DTO con los datos del nuevo usuario
      * @return Usuario creado y guardado
@@ -74,7 +74,6 @@ public class UsuarioService extends CommonServiceImpl<Usuario, UsuarioRepository
         usuario.setAdmin(false);
 
         // Generar y establecer contraseña
-        // FIXME
         final String password = documentoEmpleado;
         usuario.setPassword(passwordEncoder.encode(password));
 
@@ -145,15 +144,6 @@ public class UsuarioService extends CommonServiceImpl<Usuario, UsuarioRepository
         }
 
         return roles;
-    }
-
-    /**
-     * Genera una contraseña aleatoria de 10 caracteres alfanuméricos.
-     *
-     * @return Contraseña generada
-     */
-    private String generatePassword() {
-        return RandomStringUtils.randomAlphanumeric(10);
     }
 
     /**

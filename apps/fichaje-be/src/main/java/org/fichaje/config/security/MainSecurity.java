@@ -69,25 +69,35 @@ public class MainSecurity extends WebSecurityConfigurerAdapter {
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-		web.ignoring().antMatchers("/v2/api-docs",
-				"/configuration/ui",
-				"/swagger-resources/**",
-				"/configuration/security",
-				"/swagger-ui.html",
-				"/webjars/**");
+		// En desarrollo: permitir Swagger sin autenticación
+		// En producción: comentar esta línea para requerir autenticación
+		String profile = System.getenv("SPRING_PROFILES_ACTIVE");
+		if ("prod".equalsIgnoreCase(profile)) {
+			web.ignoring().antMatchers("/webjars/**");
+		} else {
+			web.ignoring().antMatchers("/v2/api-docs",
+					"/configuration/ui",
+					"/swagger-resources/**",
+					"/configuration/security",
+					"/swagger-ui.html",
+					"/webjars/**");
+		}
 	}
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 
 		http
+				.requiresChannel()
+				.anyRequest()
+				.requiresSecure()
+				.and()
 				.cors().and()
 				.csrf().disable()
 				.authorizeRequests()
 				.antMatchers("/calendario/**").hasRole(RRHH)
 				.antMatchers("/dia/**").hasRole(RRHH)
-				.antMatchers("/fichaje/now").permitAll()
-//				.antMatchers("/fichaje/now").hasRole(USER)
+				.antMatchers("/fichaje/now").hasRole(USER)
 				.antMatchers("/fichaje/pagesFiltered").hasRole(USER)
 				.antMatchers("/fichaje/listFiltered").hasRole(USER)
 				.antMatchers("/fichaje/**").hasRole(RRHH)

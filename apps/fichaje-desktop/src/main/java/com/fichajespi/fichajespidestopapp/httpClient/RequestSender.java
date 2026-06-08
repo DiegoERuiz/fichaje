@@ -16,7 +16,6 @@ import java.time.Duration;
 
 import com.fichajespi.fichajespidestopapp.entity.Fichaje;
 import com.fichajespi.fichajespidestopapp.entity.NumeroEmpleado;
-import com.google.gson.Gson;
 import feign.Feign;
 import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
@@ -48,8 +47,6 @@ public class RequestSender {
 	 * .build();
    */
   public Fichaje sendRequest(String numero) throws IOException, InterruptedException {
-
-    Gson g = new Gson();
 
     NumeroEmpleado numEmpleado = new NumeroEmpleado(numero);
 
