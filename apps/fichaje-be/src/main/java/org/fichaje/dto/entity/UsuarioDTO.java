@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.fichaje.config.security.validation.ValidPassword;
 
 @Data
 @Builder
@@ -16,7 +17,10 @@ public class UsuarioDTO {
 	private long id;
 
 	private String email;
+	
+	@ValidPassword
 	private String password;
+	
 	private String numero;
 	private String nombreEmpleado;
 	private String dni;

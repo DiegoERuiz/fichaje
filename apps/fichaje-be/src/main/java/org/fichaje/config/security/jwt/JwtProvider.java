@@ -29,6 +29,9 @@ public class JwtProvider {
 
 	@Value("${jwt.expiration}")
 	private int expiration;
+	
+	@Value("${jwt.refresh-expiration:604800000}")  // 7 días por defecto
+	private int refreshExpiration;
 
 	public String generateToken(Authentication authentication) {
 		UsuarioPrincipal usuarioPrincipal = (UsuarioPrincipal) authentication.getPrincipal();
@@ -41,6 +44,39 @@ public class JwtProvider {
 				.claim("roles", roles)
 				.claim("nombre", sanitizeString(usuarioPrincipal.getNombre()))
 				.claim("id", usuarioPrincipal.getId())
+				.setIssuedAt(new Date())
+				.setExpiration(new Date(new Date().getTime() + expiration))
+				.signWith(SignatureAlgorithm.HS512, secret.getBytes())
+				.compact();
+	}
+
+	/**
+	 * Genera un refresh token con expiración más larga (7 días)
+	 */
+	public String generateRefreshToken(Authentication authentication) {
+		UsuarioPrincipal usuarioPrincipal = (UsuarioPrincipal) authentication.getPrincipal();
+		
+		return Jwts.builder()
+				.setSubject(usuarioPrincipal.getUsername())
+				.claim("type", "refresh")
+				.setIssuedAt(new Date())
+				.setExpiration(new Date(new Date().getTime() + refreshExpiration))
+				.signWith(SignatureAlgorithm.HS512, secret.getBytes())
+				.compact();
+	}
+
+	/**
+	 * Genera un nuevo access token a partir de un refresh token válido
+	 */
+	public String refreshAccessToken(String refreshToken) {
+		if (!validateToken(refreshToken)) {
+			throw new RuntimeException("Refresh token inválido o expirado");
+		}
+		
+		String username = getSubjectFromToken(refreshToken);
+		
+		return Jwts.builder()
+				.setSubject(username)
 				.setIssuedAt(new Date())
 				.setExpiration(new Date(new Date().getTime() + expiration))
 				.signWith(SignatureAlgorithm.HS512, secret.getBytes())

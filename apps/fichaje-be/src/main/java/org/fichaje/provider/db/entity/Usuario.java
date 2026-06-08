@@ -1,5 +1,6 @@
 package org.fichaje.provider.db.entity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -21,6 +22,8 @@ import com.sun.istack.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Data
 //@Builder
@@ -89,6 +92,31 @@ public class Usuario {
 	private List<Fichaje> fichajes;
 
 	private String ultimoFichaje;
+
+	// ============= AUDITORÍA =============
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private LocalDateTime updatedAt;
+
+	@JsonIgnore
+	@Column(name = "last_login_at")
+	private LocalDateTime lastLoginAt;
+
+	@JsonIgnore
+	@Column(name = "last_login_ip", length = 45)
+	private String lastLoginIp;
+
+	@JsonIgnore
+	@Column(name = "failed_login_attempts")
+	private Integer failedLoginAttempts = 0;
+
+	@JsonIgnore
+	@Column(name = "account_locked")
+	private Boolean accountLocked = false;
 
 	@JsonIgnore
 //	@JsonIgnoreProperties(value = { "usuario" })

@@ -113,8 +113,7 @@ public class MainSecurity extends WebSecurityConfigurerAdapter {
 				.antMatchers("/vacaciones/listFiltered").hasRole(USER)
 				.antMatchers("/vacaciones/**").hasRole(RRHH)
 				.antMatchers("/auth/nuevo").hasRole(RRHH)
-				.antMatchers("/auth/login").permitAll()
-				.antMatchers("/apikey/**").hasRole(RRHH)
+				.antMatchers("/auth/login").permitAll()			.antMatchers("/auth/refresh").permitAll()				.antMatchers("/apikey/**").hasRole(RRHH)
 				.antMatchers("/test/**").permitAll()
 				//.antMatchers("/**").permitAll() // Usar para testear la api sin login
 				.anyRequest().authenticated()

@@ -5,6 +5,7 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.fichaje.config.security.validation.ValidPassword;
 
 @Data
 @AllArgsConstructor
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class LoginUsuario {
     @NotBlank
     private String numero;
-    @NotBlank
+    
+    @ValidPassword
     private String password;
 }
