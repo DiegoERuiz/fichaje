@@ -27,6 +27,11 @@ logs/
 **/.env.prod
 **/data/
 
+# Production Deployment (sensitive credentials and data)
+deploy/prod/.env
+deploy/prod/.htpasswd
+deploy/prod/*.log
+
 # Spring Boot
 **/application-local.properties
 

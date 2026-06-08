@@ -78,45 +78,10 @@ services:
     ports:
       - "${APP_PORT:-80}:80"
       - "${APP_SSL_PORT:-443}:443"
-    environment:
-      ENABLE_SSL: ${ENABLE_SSL:-false}
-      DOMAIN: ${DOMAIN:-localhost}
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
-    command: >
-      sh -euc '
-        if [ "$$ENABLE_SSL" = "true" ]; then
-          echo "$$DOMAIN {
-            tls $$LETSENCRYPT_EMAIL
-            handle /api/* {
-              uri strip_prefix /api
-              reverse_proxy backend:8080 {
-                lb_try_duration 30s
-                lb_try_interval 1s
-              }
-            }
-            handle {
-              reverse_proxy frontend:80
-            }
-          }" > /etc/caddy/Caddyfile;
-        else
-          echo ":80 {
-            handle /api/* {
-              uri strip_prefix /api
-              reverse_proxy backend:8080 {
-                lb_try_duration 30s
-                lb_try_interval 1s
-              }
-            }
-            handle {
-              reverse_proxy frontend:80
-            }
-          }" > /etc/caddy/Caddyfile;
-        fi &&
-        caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile &&
-        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
       frontend:
         condition: service_started
@@ -128,16 +93,22 @@ services:
 
   phpmyadmin:
     container_name: fichaje_dbadmin
-    image: phpmyadmin:latest
-    ports:
-      - "${PHPMYADMIN_PORT:-81}:80"
+    build:
+      context: .
+      dockerfile: Dockerfile.phpmyadmin
+    expose:
+      - "80"
     environment:
-      PMA_ARBITRARY: 1
+      PMA_ARBITRARY: 0
       PMA_HOST: db
       PMA_USER: ${MYSQL_USER}
       PMA_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./.htpasswd:/etc/apache2/.htpasswd:ro
+      - ./apache-auth.conf:/tmp/apache-auth.conf:ro
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - fichajes-network

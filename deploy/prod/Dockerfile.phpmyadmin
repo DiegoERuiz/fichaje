@@ -1,0 +1,59 @@
+FROM phpmyadmin:latest
+
+# Instalar herramientas necesarias
+RUN apt-get update && apt-get install -y apache2-utils && rm -rf /var/lib/apt/lists/*
+
+# Crear archivo de configuración de PHP para conexión TCP a MySQL con auto-login
+RUN mkdir -p /etc/phpmyadmin && cat > /etc/phpmyadmin/config.inc.php << 'EOF'
+<?php
+// Configuración de PhpMyAdmin para Docker
+// Conectar a MySQL vía TCP (no socket)
+// Auto-login con credenciales desde variables de entorno
+
+// Obtener credenciales desde variables de entorno
+$pma_user = getenv('PMA_USER') ?: 'root';
+$pma_password = getenv('PMA_PASSWORD') ?: '';
+
+$cfg['Servers'][1]['host'] = 'db';
+$cfg['Servers'][1]['port'] = '3306';
+$cfg['Servers'][1]['extension'] = 'mysqli';
+$cfg['Servers'][1]['connect_type'] = 'tcp';
+$cfg['Servers'][1]['compress'] = false;
+$cfg['Servers'][1]['auth_type'] = 'config';
+$cfg['Servers'][1]['user'] = $pma_user;
+$cfg['Servers'][1]['password'] = $pma_password;
+$cfg['Servers'][1]['AllowNoPassword'] = false;
+$cfg['Servers'][1]['hide_db'] = '';
+
+$cfg['blowfish_secret'] = 'fichaje_phpmyadmin_secret_2024_production_key_32chars_minimum!!!';
+$cfg['ShowPhpInfo'] = false;
+$cfg['ShowChgPassword'] = true;
+$cfg['DefaultLang'] = 'es';
+$cfg['DefaultConnectionCollation'] = 'utf8mb4_unicode_ci';
+
+// Desactivar advertencias de contraseña vacía
+$cfg['PmaAbsoluteUri'] = '';
+EOF
+
+# Copiar archivo de configuración de Apache con autenticación
+COPY apache-auth.conf /tmp/apache-auth.conf
+
+# Crear script de entrada que configure Apache
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Crear archivo .htpasswd si existe\n\
+if [ -f /etc/apache2/.htpasswd ]; then\n\
+  # Habilitar módulos necesarios\n\
+  a2enmod authn_file\n\
+  a2enmod authz_user\n\
+  a2enmod auth_basic\n\
+  \n\
+  # Copiar configuración\n\
+  cp /tmp/apache-auth.conf /etc/apache2/conf-enabled/phpmyadmin-auth.conf\n\
+fi\n\
+\n\
+# Ejecutar Apache\n\
+exec apache2-foreground' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

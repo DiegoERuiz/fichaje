@@ -1,0 +1,33 @@
+fichajes.biedma.com {
+	tls it@biedma.com
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy backend:8080 {
+			lb_try_duration 30s
+			lb_try_interval 1s
+		}
+	}
+	handle /db/* {
+		uri strip_prefix /db
+		reverse_proxy phpmyadmin:80
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+:80 {
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy backend:8080 {
+			lb_try_duration 30s
+			lb_try_interval 1s
+		}
+	}
+	handle /db/* {
+		uri strip_prefix /db
+		reverse_proxy phpmyadmin:80
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+}
