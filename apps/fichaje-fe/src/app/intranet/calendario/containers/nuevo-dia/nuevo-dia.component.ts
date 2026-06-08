@@ -40,7 +40,6 @@ export class NuevoDiaComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-
       }
     )
   }
