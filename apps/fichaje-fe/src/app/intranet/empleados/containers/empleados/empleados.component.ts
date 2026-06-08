@@ -77,7 +77,7 @@ export class EmpleadosComponent implements OnInit {
         this.pag.totalPages = new Array(data.totalPages)
       },
       err => {
-        console.log(err)
+
       }
     )
   }

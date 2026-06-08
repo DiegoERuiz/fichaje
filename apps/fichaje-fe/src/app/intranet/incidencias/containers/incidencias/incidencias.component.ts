@@ -109,14 +109,14 @@ export class IncidenciasComponent implements OnInit {
   listarElementos(): void {
     this.service.getElements(this.dto, this.pag.page, this.pag.size, this.order, this.asc).subscribe(
       data => {
-        console.log(data)
+        // Datos procesados
         this.listaElementos = data.content
         this.pag.isFirst = data.first
         this.pag.isLast = data.last
         this.pag.totalPages = new Array(data.totalPages)
       },
       err => {
-        console.log(err)
+        // Error silencioso
       }
     )
   }

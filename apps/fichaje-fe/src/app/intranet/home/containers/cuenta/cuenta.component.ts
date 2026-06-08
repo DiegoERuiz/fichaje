@@ -29,13 +29,13 @@ export class CuentaComponent implements OnInit {
     if (this.checkPasswords()) {
       this.service.changePassword(this.tokenService.getId(), new Password(this.pass1)).subscribe(
         data => {
-          console.log(data);
+
           Popup.toastSucess('', 'Password cambiado');
           this.router.navigate(['intranet/home'])
         },
         err => {
           Popup.toastDanger('Ocurrió un error', err.message);
-          console.log(err)
+
         }
       )
     }

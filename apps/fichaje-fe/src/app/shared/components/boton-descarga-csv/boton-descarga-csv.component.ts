@@ -52,7 +52,7 @@ export class BotonDescargaCsvComponent implements OnInit {
         new AngularCsv(unpack(data), this.fileName + stringDate, options);
       },
       err => {
-        console.log(err)
+
       }
     )
   }

@@ -50,7 +50,7 @@ export class HomeComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err);
+
       }
     );
   }
@@ -68,7 +68,7 @@ export class HomeComponent implements OnInit {
       err => {
         this.isLoading = false;
         Popup.toastDanger('Ocurrió un error', err.message || 'Error al registrar fichaje');
-        console.log(err);
+
       }
     );
   }

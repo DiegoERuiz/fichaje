@@ -46,7 +46,7 @@ export class RegisterFormComponent implements OnInit {
         this.router.navigate([`intranet/empleados`])
       },
       err => {
-        console.log(err)
+        // Error silencioso
         Popup.toastDanger('Error', err.error.mensaje);
       }
     )

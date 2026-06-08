@@ -27,12 +27,10 @@ export class FichajesDetalleComponent implements OnInit {
     const id = this.activatedRoute.snapshot.params.id
     this.service.detail(id).subscribe(
       data => {
-        console.log(data)
         this.model = data
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
       }
     )
   }
@@ -45,7 +43,6 @@ export class FichajesDetalleComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
       }
     )
   }
@@ -68,11 +65,8 @@ export class FichajesDetalleComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
       }
     )
   }
-
-
 
 }

@@ -40,12 +40,12 @@ export class NuevoPermisoComponent implements OnInit {
 
     this.service.create(permiso).subscribe(
       data => {
-        console.log(data)
+        // Datos procesados
         Popup.toastSucess('', 'Permiso Guardado');
         this.router.navigate([`intranet/home/permisos/${this.numeroUsuario}`])
       },
       err => {
-        console.log(err)
+        // Error silencioso
         Popup.toastDanger('Error', err.error.mensaje);
       }
     )

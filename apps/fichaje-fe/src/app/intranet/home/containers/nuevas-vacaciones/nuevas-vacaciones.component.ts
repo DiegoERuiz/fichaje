@@ -37,12 +37,12 @@ export class NuevasVacacionesComponent implements OnInit {
 
     this.service.create(vacaciones).subscribe(
       data => {
-        console.log(data)
+
         Popup.toastSucess('', 'Vacaciones Guardadas');
         this.router.navigate([`intranet/home/vacaciones/${this.numeroUsuario}`])
       },
       err => {
-        console.log(err)
+
         Popup.toastDanger('Error', err.error.mensaje);
       }
     )

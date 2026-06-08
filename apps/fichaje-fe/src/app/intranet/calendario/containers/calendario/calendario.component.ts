@@ -56,7 +56,7 @@ export class CalendarioComponent {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }

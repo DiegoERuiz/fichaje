@@ -31,8 +31,7 @@ export class NuevoDiaComponent implements OnInit {
 
     const id = this.activatedRoute.snapshot.params.id
 
-    console.log(id)
-    console.log(this.model)
+    // Validación sin logs
 
     this.service.save(id, this.model).subscribe(
       data => {
@@ -41,7 +40,7 @@ export class NuevoDiaComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }

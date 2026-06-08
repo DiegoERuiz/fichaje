@@ -73,7 +73,7 @@ export class FichajesComponent implements OnInit {
         this.pag.totalPages = new Array(data.totalPages)
       },
       err => {
-        console.log(err)
+        // Error silencioso
       }
     )
   }

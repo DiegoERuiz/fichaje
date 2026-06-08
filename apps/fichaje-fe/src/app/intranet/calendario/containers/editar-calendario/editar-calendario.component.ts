@@ -38,7 +38,7 @@ export class EditarCalendarioComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }
@@ -65,7 +65,7 @@ export class EditarCalendarioComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }
@@ -88,7 +88,7 @@ export class EditarCalendarioComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }
@@ -110,7 +110,7 @@ export class EditarCalendarioComponent implements OnInit {
       },
       err => {
         Popup.toastDanger('Ocurrió un error', err.message);
-        console.log(err)
+
       }
     )
   }

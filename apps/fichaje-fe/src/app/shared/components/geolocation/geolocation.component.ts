@@ -73,7 +73,6 @@ export class GeolocationComponent implements OnInit, AfterViewInit, OnDestroy {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('Geolocalización obtenida:', position.coords);
         this.coordinates = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
@@ -90,7 +89,7 @@ export class GeolocationComponent implements OnInit, AfterViewInit, OnDestroy {
         }, 100);
       },
       (error) => {
-        console.error('Error de geolocalización:', error);
+
         this.handleGeolocationError(error);
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -121,17 +120,10 @@ export class GeolocationComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private initializeMap(): void {
     if (!this.coordinates || !this.mapContainer || this.mapInitialized) {
-      console.warn('No se puede inicializar el mapa', {
-        hasCoordinates: !!this.coordinates,
-        hasContainer: !!this.mapContainer,
-        mapInitialized: this.mapInitialized
-      });
       return;
     }
 
     try {
-      console.log('Inicializando mapa en:', this.coordinates);
-
       // Inicializar el mapa
       this.map = L.map(this.mapContainer.nativeElement).setView(
         [this.coordinates.latitude, this.coordinates.longitude],
@@ -183,9 +175,7 @@ export class GeolocationComponent implements OnInit, AfterViewInit, OnDestroy {
       }, 300);
 
       this.mapInitialized = true;
-      console.log('Mapa inicializado correctamente');
     } catch (err) {
-      console.error('Error al inicializar el mapa:', err);
       this.error = 'Error al cargar el mapa. Por favor, recarga la página.';
     }
   }
